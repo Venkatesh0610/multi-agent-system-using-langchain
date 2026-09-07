@@ -1,1282 +1,371 @@
 import streamlit as st
 import time
-from io import BytesIO
+from pipeline.pipeline import run_career_research_generator
+import warnings
 
-from pipeline.pipeline import run_job_analysis_pipeline
+# Ignore all Python warnings in terminal
+warnings.filterwarnings("ignore")
 
-
-# ============================================================
+# =============================================================================
 # PAGE CONFIG
-# ============================================================
-
+# =============================================================================
 st.set_page_config(
-    page_title="AI Job Fit Advisor",
-    page_icon="🧑‍💻",
+    page_title="Career Research Assistant",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-
-# ============================================================
-# CUSTOM CSS
-# ============================================================
-
+# =============================================================================
+# CUSTOM CSS - DARK BLUE & CYAN PALETTE
+# =============================================================================
 st.markdown("""
 <style>
-
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
-
-
-/* ==========================================================
-   BASE
-   ========================================================== */
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap');
 
 html, body, [class*="css"] {
     font-family: 'DM Sans', sans-serif;
-    color: #edf3ff;
 }
 
 .stApp {
-    background: #07111f;
-    background-image:
-        radial-gradient(
-            circle at top left,
-            rgba(0,191,255,0.14),
-            transparent 32%
-        ),
-        radial-gradient(
-            circle at bottom right,
-            rgba(124,58,237,0.12),
-            transparent 30%
-        ),
-        linear-gradient(
-            180deg,
-            #07111f 0%,
-            #0a1729 100%
-        );
+    background: radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.12), transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.12), transparent 40%),
+                linear-gradient(135deg, #030712 0%, #0f172a 50%, #020617 100%);
+    color: #f3f4f6;
 }
 
-#MainMenu,
-footer,
-header {
-    visibility: hidden;
-}
+#MainMenu, footer, header { visibility: hidden; }
 
 .block-container {
-    padding: 2rem 3rem 4rem;
-    max-width: 1250px;
+    max-width: 1200px;
+    padding-top: 35px;
+    padding-bottom: 80px;
 }
 
-
-/* ==========================================================
-   HERO
-   ========================================================== */
-
-.hero {
-    text-align: center;
-    padding: 3.2rem 0 2.2rem;
-}
+/* HERO SECTION */
+.hero { text-align: center; padding: 30px 20px 25px; }
 
 .hero-eyebrow {
+    display: inline-block;
     font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
+    font-size: 12px;
     font-weight: 500;
-    letter-spacing: 0.25em;
+    letter-spacing: 2px;
     text-transform: uppercase;
+    padding: 6px 16px;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 50px;
+    background: rgba(56, 189, 248, 0.1);
     color: #38bdf8;
-    margin-bottom: 1rem;
+    margin-bottom: 16px;
 }
 
 .hero h1 {
     font-family: 'Syne', sans-serif;
-    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-size: clamp(38px, 5vw, 60px);
     font-weight: 800;
-    line-height: 1;
-    letter-spacing: -0.03em;
-    color: #f8fbff;
-    margin: 0 0 1rem;
+    line-height: 1.1;
+    margin: 0;
+    letter-spacing: -1.5px;
+    color: #f9fafb;
 }
 
-.hero h1 span {
-    background: linear-gradient(
-        135deg,
-        #38bdf8,
-        #8b5cf6
-    );
-
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
+.hero h1 span { color: #38bdf8; }
 
 .hero-sub {
-    font-size: 1.05rem;
-    font-weight: 300;
-    color: #b5c3d9;
-    max-width: 650px;
-    margin: 0 auto;
-    line-height: 1.65;
+    max-width: 720px;
+    margin: 16px auto 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #bae6fd;
+    opacity: 0.8;
 }
 
-
-/* ==========================================================
-   DIVIDER
-   ========================================================== */
-
-.divider {
-    height: 1px;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(56,189,248,0.35),
-        transparent
-    );
-
-    margin: 2rem 0;
+/* UI CARDS */
+.glass-card {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    margin-bottom: 20px;
 }
 
-
-/* ==========================================================
-   INPUT CARD
-   ========================================================== */
-
-.input-card {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(56,189,248,0.18);
-    border-radius: 22px;
-    padding: 2rem 2.3rem;
-    margin-bottom: 2rem;
-    backdrop-filter: blur(14px);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.28);
-}
-
-
-/* ==========================================================
-   INPUTS
-   ========================================================== */
-
-.stTextInput > div > div > input,
-.stTextArea textarea {
-
-    background: rgba(255,255,255,0.06) !important;
-
-    border: 1px solid rgba(56,189,248,0.25) !important;
-
-    border-radius: 12px !important;
-
-    color: #f8fbff !important;
-
-    font-family: 'DM Sans', sans-serif !important;
-
-    font-size: 0.95rem !important;
-
-    padding: 0.8rem 1rem !important;
-}
-
-
-.stTextInput > label,
-.stTextArea > label,
-.stFileUploader > label {
-
-    font-family: 'DM Mono', monospace !important;
-
-    font-size: 0.72rem !important;
-
-    letter-spacing: 0.15em !important;
-
-    text-transform: uppercase !important;
-
+label {
     color: #38bdf8 !important;
-
-    font-weight: 500 !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
 }
 
-
-/* ==========================================================
-   FILE UPLOADER
-   ========================================================== */
-
-[data-testid="stFileUploader"] {
-
-    background: rgba(255,255,255,0.03);
-
-    border: 1px dashed rgba(56,189,248,0.25);
-
-    border-radius: 14px;
-
-    padding: 0.8rem;
+/* INPUT OVERRIDES */
+.stTextInput input, .stTextArea textarea, .stSelectbox > div > div {
+    background: rgba(3, 7, 18, 0.8) !important;
+    border: 1px solid rgba(56, 189, 248, 0.25) !important;
+    border-radius: 8px !important;
+    color: #f9fafb !important;
 }
 
-
-/* ==========================================================
-   BUTTON
-   ========================================================== */
-
+/* BUTTON */
 .stButton > button {
-
-    background: linear-gradient(
-        135deg,
-        #38bdf8 0%,
-        #8b5cf6 100%
-    ) !important;
-
-    color: white !important;
-
-    font-family: 'Syne', sans-serif !important;
-
-    font-weight: 700 !important;
-
-    font-size: 0.95rem !important;
-
-    letter-spacing: 0.04em !important;
-
-    border: none !important;
-
-    border-radius: 12px !important;
-
-    padding: 0.8rem 2.2rem !important;
-
-    transition: all 0.18s ease !important;
-
-    box-shadow: 0 8px 30px rgba(56,189,248,0.22) !important;
-
     width: 100%;
+    min-height: 48px;
+    border-radius: 10px;
+    border: 1px solid rgba(56, 189, 248, 0.5);
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 20px rgba(2, 132, 199, 0.35);
 }
-
 
 .stButton > button:hover {
-
-    transform: translateY(-2px) scale(1.01) !important;
-
-    box-shadow:
-        0 12px 35px rgba(56,189,248,0.32) !important;
+    transform: translateY(-2px);
+    border-color: rgba(186, 230, 253, 0.6);
+    box-shadow: 0 6px 24px rgba(2, 132, 199, 0.55);
 }
 
+/* PIPELINE CARDS & DYNAMIC COLORING */
+.pipeline-card {
+    min-height: 160px;
+    padding: 18px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s ease;
+}
 
-/* ==========================================================
-   SECTION HEADING
-   ========================================================== */
+/* RUNNING STATE - AMBER/GOLD */
+.pipeline-card.running {
+    border-color: #f59e0b !important;
+    background: rgba(245, 158, 11, 0.15) !important;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3) !important;
+}
 
-.section-heading {
+/* COMPLETE STATE - CYAN/BLUE */
+.pipeline-card.complete {
+    border-color: #38bdf8 !important;
+    background: rgba(14, 116, 144, 0.4) !important;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.3) !important;
+}
 
+.pipeline-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #38bdf8;
+    font-weight: 500;
+}
+
+.pipeline-name {
     font-family: 'Syne', sans-serif;
-
-    font-size: 1.35rem;
-
+    font-size: 16px;
     font-weight: 700;
-
-    color: #f8fbff;
-
-    margin: 2rem 0 1rem;
+    margin: 4px 0;
+    color: #f3f4f6;
 }
 
-
-/* ==========================================================
-   PIPELINE CARDS
-   ========================================================== */
-
-.step-card {
-
-    background: rgba(255,255,255,0.035);
-
-    border: 1px solid rgba(255,255,255,0.08);
-
-    border-radius: 18px;
-
-    padding: 1.25rem 1.5rem;
-
-    margin-bottom: 1rem;
-
-    position: relative;
-
-    overflow: hidden;
-
-    backdrop-filter: blur(10px);
-}
-
-
-.step-card.done {
-
-    border-color: rgba(34,197,94,0.28);
-
-    background: rgba(34,197,94,0.05);
-}
-
-
-.step-card.active {
-
-    border-color: rgba(56,189,248,0.45);
-
-    background: rgba(56,189,248,0.06);
-}
-
-
-.step-card::before {
-
-    content: '';
-
-    position: absolute;
-
-    left: 0;
-
-    top: 0;
-
-    bottom: 0;
-
-    width: 4px;
-
-    background: rgba(255,255,255,0.06);
-}
-
-
-.step-card.done::before {
-    background: #22c55e;
-}
-
-
-.step-card.active::before {
-    background: #38bdf8;
-}
-
-
-.step-header {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 0.8rem;
-}
-
-
-.step-num {
-
+.pipeline-status-badge {
     font-family: 'DM Mono', monospace;
-
-    font-size: 0.68rem;
-
-    color: #38bdf8;
+    font-size: 11px;
+    margin-top: 10px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    font-weight: 600;
 }
 
+.badge-idle { background: rgba(255, 255, 255, 0.08); color: #9ca3af; }
+.badge-running { background: rgba(245, 158, 11, 0.3); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.5); }
+.badge-complete { background: rgba(56, 189, 248, 0.25); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.5); }
 
-.step-title {
+/* REPORT READABILITY */
+.report-wrapper {
+    background: rgba(3, 7, 18, 0.75);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 14px;
+    padding: 28px;
+    color: #f3f4f6;
+    line-height: 1.7;
+    font-size: 15px;
+}
 
+.report-wrapper h1, .report-wrapper h2, .report-wrapper h3 {
+    color: #38bdf8 !important;
     font-family: 'Syne', sans-serif;
-
-    font-size: 0.95rem;
-
-    font-weight: 700;
-
-    color: #f8fbff;
+    margin-top: 20px;
 }
-
-
-.step-status {
-
-    margin-left: auto;
-
-    font-family: 'DM Mono', monospace;
-
-    font-size: 0.65rem;
-
-    letter-spacing: 0.1em;
-}
-
-
-.status-waiting {
-    color: #64748b;
-}
-
-
-.status-running {
-    color: #38bdf8;
-}
-
-
-.status-done {
-    color: #22c55e;
-}
-
-
-.step-desc {
-
-    font-size: 0.78rem;
-
-    color: #94a3b8;
-
-    margin-top: 0.4rem;
-
-    padding-left: 2rem;
-}
-
-
-/* ==========================================================
-   RESULT PANELS
-   ========================================================== */
-
-.result-panel {
-
-    background: rgba(255,255,255,0.03);
-
-    border: 1px solid rgba(255,255,255,0.08);
-
-    border-radius: 18px;
-
-    padding: 1.5rem 1.8rem;
-
-    margin-bottom: 1rem;
-
-    backdrop-filter: blur(12px);
-}
-
-
-.result-title {
-
-    font-family: 'DM Mono', monospace;
-
-    font-size: 0.7rem;
-
-    letter-spacing: 0.2em;
-
-    text-transform: uppercase;
-
-    color: #38bdf8;
-
-    padding-bottom: 0.7rem;
-
-    margin-bottom: 1rem;
-
-    border-bottom:
-        1px solid rgba(56,189,248,0.15);
-}
-
-
-/* ==========================================================
-   SCORE CARD
-   ========================================================== */
-
-.score-card {
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(56,189,248,0.10),
-            rgba(139,92,246,0.10)
-        );
-
-    border:
-        1px solid rgba(56,189,248,0.25);
-
-    border-radius: 20px;
-
-    padding: 2rem;
-
-    text-align: center;
-
-    margin-bottom: 1.5rem;
-}
-
-
-.score-label {
-
-    font-family: 'DM Mono', monospace;
-
-    font-size: 0.7rem;
-
-    letter-spacing: 0.2em;
-
-    text-transform: uppercase;
-
-    color: #94a3b8;
-}
-
-
-.score-value {
-
-    font-family: 'Syne', sans-serif;
-
-    font-size: 4rem;
-
-    font-weight: 800;
-
-    color: #f8fbff;
-
-    line-height: 1.1;
-
-    margin: 0.4rem 0;
-}
-
-
-/* ==========================================================
-   NOTICE
-   ========================================================== */
-
-.notice {
-
-    font-family: 'DM Mono', monospace;
-
-    font-size: 0.7rem;
-
-    color: #64748b;
-
-    text-align: center;
-
-    margin-top: 3rem;
-
-    letter-spacing: 0.08em;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
+# =============================================================================
+# HERO
+# =============================================================================
+st.markdown("""
+<div class="hero">
+    <div class="hero-eyebrow">LangChain · Groq / Gemini · Multi-Agent AI</div>
+    <h1>Career <span>Intelligence Suite</span></h1>
+    <p class="hero-sub">Autonomous multi-agent market research and career evaluation system.</p>
+</div>
+""", unsafe_allow_html=True)
 
-# ============================================================
-# SESSION STATE
-# ============================================================
+# =============================================================================
+# INPUT SECTION
+# =============================================================================
+st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+col1, col2 = st.columns(2)
 
-if "results" not in st.session_state:
-    st.session_state.results = {}
+role_options = [
+    "Generative AI Engineer", "LLM Solutions Architect", "Data Scientist", 
+    "Machine Learning Engineer", "Backend Developer (Python/FastAPI)", 
+    "DevOps / MLOps Engineer", "Full Stack Developer", "Other (Custom Input)"
+]
 
-if "running" not in st.session_state:
-    st.session_state.running = False
+exp_options = ["0-1 years (Junior)", "2-4 years (Mid-Level)", "5-8 years (Senior)", "8+ years (Lead/Principal)", "Other (Custom Input)"]
+loc_options = ["Hyderabad, India", "Bengaluru, India", "Remote (Global)", "San Francisco, CA", "London, UK", "Other (Custom Input)"]
 
+with col1:
+    selected_role = st.selectbox("Target Role", role_options, index=0)
+    role = st.text_input("Specify Role", placeholder="e.g. Quantum Computing Researcher") if selected_role == "Other (Custom Input)" else selected_role
 
-# ============================================================
-# HELPER FUNCTIONS
-# ============================================================
+    selected_exp = st.selectbox("Experience Level", exp_options, index=2)
+    experience = st.text_input("Specify Experience", placeholder="e.g. 12 years") if selected_exp == "Other (Custom Input)" else selected_exp
 
-def extract_resume_text(uploaded_file):
+with col2:
+    selected_loc = st.selectbox("Preferred Location", loc_options, index=0)
+    location = st.text_input("Specify Location", placeholder="e.g. Berlin, Germany") if selected_loc == "Other (Custom Input)" else selected_loc
 
-    """
-    Extract text from PDF or DOCX resume.
-    """
+    skills = st.text_area(
+        "Current Skills",
+        value="Python, LangChain, RAG, LLMs, FastAPI, Docker, GCP",
+        height=100,
+        key="skills"
+    )
 
-    if uploaded_file is None:
-        return ""
+analyze_button = st.button("🚀 Run Career Intelligence Pipeline", use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-    file_name = uploaded_file.name.lower()
-
-    # --------------------------------------------------------
-    # PDF
-    # --------------------------------------------------------
-
-    if file_name.endswith(".pdf"):
-
-        try:
-
-            from pypdf import PdfReader
-
-            pdf_bytes = uploaded_file.read()
-
-            reader = PdfReader(
-                BytesIO(pdf_bytes)
-            )
-
-            text = ""
-
-            for page in reader.pages:
-
-                page_text = page.extract_text()
-
-                if page_text:
-                    text += page_text + "\n"
-
-            return text.strip()
-
-        except Exception as e:
-
-            st.error(
-                f"Could not read PDF: {str(e)}"
-            )
-
-            return ""
-
-
-    # --------------------------------------------------------
-    # DOCX
-    # --------------------------------------------------------
-
-    elif file_name.endswith(".docx"):
-
-        try:
-
-            from docx import Document
-
-            doc_bytes = uploaded_file.read()
-
-            document = Document(
-                BytesIO(doc_bytes)
-            )
-
-            text = "\n".join(
-                paragraph.text
-                for paragraph in document.paragraphs
-            )
-
-            return text.strip()
-
-        except Exception as e:
-
-            st.error(
-                f"Could not read DOCX: {str(e)}"
-            )
-
-            return ""
-
-
-    else:
-
-        st.error(
-            "Please upload a PDF or DOCX resume."
-        )
-
-        return ""
-
-
-def pipeline_step(
-    number,
-    title,
-    description,
-    status
-):
-
-    status_map = {
-
-        "waiting": (
-            "WAITING",
-            "status-waiting"
-        ),
-
-        "running": (
-            "● RUNNING",
-            "status-running"
-        ),
-
-        "done": (
-            "✓ DONE",
-            "status-done"
-        )
+# =============================================================================
+# PIPELINE STATUS TRACKER (DYNAMIC BLUE & GOLD UI)
+# =============================================================================
+if "step_states" not in st.session_state:
+    st.session_state["step_states"] = {
+        1: {"status": "idle", "msg": "Waiting..."},
+        2: {"status": "idle", "msg": "Waiting..."},
+        3: {"status": "idle", "msg": "Waiting..."},
+        4: {"status": "idle", "msg": "Waiting..."}
     }
 
-    label, status_class = status_map[status]
+pipeline_meta = [
+    (1, "🔎", "Search Agent", "Discovers market trends & postings"),
+    (2, "📖", "Reader Agent", "Extracts deep page insights"),
+    (3, "✍️", "Writer Agent", "Synthesizes intelligence report"),
+    (4, "🧐", "Critic Agent", "Audits for precision & accuracy")
+]
 
-    card_class = ""
+pipeline_placeholder = st.empty()
 
-    if status == "running":
-        card_class = "active"
+def render_pipeline_ui():
+    cols = pipeline_placeholder.columns(4)
+    for col, (step_num, icon, name, desc) in zip(cols, pipeline_meta):
+        step_info = st.session_state["step_states"][step_num]
+        status = step_info["status"]
+        
+        badge_class = f"badge-{status}"
+        card_class = f"pipeline-card {status}"
+        
+        if status == "running":
+            status_label = "⚡ RUNNING..."
+        elif status == "complete":
+            status_label = "✓ DONE"
+        else:
+            status_label = "IDLE"
 
-    elif status == "done":
-        card_class = "done"
-
-
-    st.markdown(
-        f"""
-        <div class="step-card {card_class}">
-
-            <div class="step-header">
-
-                <span class="step-num">
-                    {number}
-                </span>
-
-                <span class="step-title">
-                    {title}
-                </span>
-
-                <span class="step-status {status_class}">
-                    {label}
-                </span>
-
+        with col:
+            st.markdown(f"""
+            <div class="{card_class}">
+                <div class="pipeline-number">STEP 0{step_num}</div>
+                <div style="font-size: 22px; margin: 4px 0;">{icon}</div>
+                <div class="pipeline-name">{name}</div>
+                <div style="font-size:11px; color:#bae6fd; opacity:0.7;">{desc}</div>
+                <div class="pipeline-status-badge {badge_class}">{status_label}</div>
             </div>
-
-            <div class="step-desc">
-                {description}
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-# ============================================================
-# HERO
-# ============================================================
-
-st.markdown(
-    """
-    <div class="hero">
-
-        <div class="hero-eyebrow">
-            Multi-Agent Career Intelligence
-        </div>
-
-        <h1>
-            Job Fit <span>Advisor</span>
-        </h1>
-
-        <p class="hero-sub">
-            Upload your resume and provide a job opportunity.
-            Specialized AI agents analyze the role, research
-            the company, identify skill gaps and help you
-            decide whether the opportunity is right for you.
-        </p>
-
-    </div>
-
-    <div class="divider"></div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# MAIN INPUT AREA
-# ============================================================
-
-col_input, col_pipeline = st.columns(
-    [5, 4],
-    gap="large"
-)
-
-
-# ============================================================
-# LEFT - INPUT
-# ============================================================
-
-with col_input:
-
-    st.markdown(
-        '<div class="input-card">',
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        '<div class="section-heading" style="margin-top:0;">'
-        '📌 Job Opportunity'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-    # --------------------------------------------------------
-    # Job URL
-    # --------------------------------------------------------
-
-    job_url = st.text_input(
-        "Job URL",
-        placeholder=(
-            "https://company.com/careers/"
-            "senior-ai-engineer"
-        )
-    )
-
-
-    st.markdown(
-        """
-        <div style="
-            text-align:center;
-            color:#64748b;
-            font-family:'DM Mono',monospace;
-            font-size:0.7rem;
-            margin:0.6rem 0;
-        ">
-            OR
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-    # --------------------------------------------------------
-    # Job Description
-    # --------------------------------------------------------
-
-    job_description = st.text_area(
-        "Job Description",
-        placeholder=(
-            "Paste the complete job description here..."
-        ),
-        height=220
-    )
-
-
-    st.markdown(
-        '<div class="section-heading">'
-        '👤 Your Resume'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-    # --------------------------------------------------------
-    # Resume upload
-    # --------------------------------------------------------
-
-    resume_file = st.file_uploader(
-        "Upload Resume",
-        type=["pdf", "docx"],
-        help="Upload your resume in PDF or DOCX format."
-    )
-
-
-    if resume_file:
-
-        st.caption(
-            f"📄 {resume_file.name}"
-        )
-
-
-    # --------------------------------------------------------
-    # Run button
-    # --------------------------------------------------------
-
-    run_button = st.button(
-        "⚡ Analyze Job Fit",
-        use_container_width=True
-    )
-
-
-    st.markdown(
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-    # --------------------------------------------------------
-    # Example
-    # --------------------------------------------------------
-
-    st.markdown(
-        """
-        <div style="
-            font-family:'DM Mono',monospace;
-            font-size:0.7rem;
-            color:#64748b;
-            line-height:1.7;
-        ">
-
-        <b style="color:#38bdf8;">HOW IT WORKS</b><br><br>
-
-        1. Provide a job URL or paste the JD<br>
-        2. Upload your resume<br>
-        3. AI analyzes both profiles<br>
-        4. Company information is researched<br>
-        5. Skill gaps are identified<br>
-        6. AI recommends whether you should apply
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-# ============================================================
-# RIGHT - PIPELINE
-# ============================================================
-
-with col_pipeline:
-
-    st.markdown(
-        '<div class="section-heading" style="margin-top:0;">'
-        'AI Pipeline'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-    results = st.session_state.results
-
-
-    pipeline_step(
-        "01",
-        "Job Analyzer Agent",
-        "Extracts requirements, skills and responsibilities",
-        "done" if "job_analysis" in results
-        else "waiting"
-    )
-
-
-    pipeline_step(
-        "02",
-        "Resume Analyzer Chain",
-        "Builds a structured candidate profile",
-        "done" if "candidate_profile" in results
-        else "waiting"
-    )
-
-
-    pipeline_step(
-        "03",
-        "Company Research Agent",
-        "Researches company and recent developments",
-        "done" if "company_research" in results
-        else "waiting"
-    )
-
-
-    pipeline_step(
-        "04",
-        "Skill Gap Analyzer",
-        "Compares candidate skills against requirements",
-        "done" if "skill_gap_analysis" in results
-        else "waiting"
-    )
-
-
-    pipeline_step(
-        "05",
-        "Career Advisor",
-        "Generates job-fit score and recommendation",
-        "done" if "career_advice" in results
-        else "waiting"
-    )
-
-
-    pipeline_step(
-        "06",
-        "Critic",
-        "Reviews the recommendation for accuracy",
-        "done" if "critic_feedback" in results
-        else "waiting"
-    )
-
-
-# ============================================================
-# RUN PIPELINE
-# ============================================================
-
-if run_button:
-
-    # --------------------------------------------------------
-    # Validate job input
-    # --------------------------------------------------------
-
-    if not job_url.strip() and not job_description.strip():
-
-        st.error(
-            "Please provide a Job URL or Job Description."
-        )
-
-        st.stop()
-
-
-    # --------------------------------------------------------
-    # Validate resume
-    # --------------------------------------------------------
-
-    if resume_file is None:
-
-        st.error(
-            "Please upload your resume."
-        )
-
-        st.stop()
-
-
-    # --------------------------------------------------------
-    # Extract resume
-    # --------------------------------------------------------
-
-    with st.spinner(
-        "📄 Reading your resume..."
-    ):
-
-        resume_text = extract_resume_text(
-            resume_file
-        )
-
-
-    if not resume_text:
-
-        st.error(
-            "Could not extract text from the resume."
-        )
-
-        st.stop()
-
-
-    # --------------------------------------------------------
-    # Prepare job input
-    # --------------------------------------------------------
-
-    if job_url.strip():
-
-        job_input = job_url.strip()
-
+            """, unsafe_allow_html=True)
+
+render_pipeline_ui()
+
+# =============================================================================
+# EXECUTE PIPELINE WITH REAL-TIME UPDATES
+# =============================================================================
+if analyze_button:
+    if not role or not experience or not skills or not location:
+        st.error("Please ensure all profile inputs are completed.")
     else:
-
-        job_input = job_description.strip()
-
-
-    # --------------------------------------------------------
-    # Clear previous results
-    # --------------------------------------------------------
-
-    st.session_state.results = {}
-    st.session_state.running = True
-
-
-    # --------------------------------------------------------
-    # Run pipeline
-    # --------------------------------------------------------
-
-    try:
-
-        with st.status(
-            "🚀 Running AI Job Fit Analysis...",
-            expanded=True
-        ) as status:
-
-            st.write(
-                "🤖 Running Job Analyzer..."
-            )
-
-            st.write(
-                "👤 Analyzing candidate resume..."
-            )
-
-            st.write(
-                "🏢 Researching the company..."
-            )
-
-            st.write(
-                "🛠️ Comparing skills and identifying gaps..."
-            )
-
-            st.write(
-                "🎯 Generating career recommendation..."
-            )
-
-            st.write(
-                "🧐 Reviewing the recommendation..."
-            )
-
-
-            results = run_job_analysis_pipeline(
-                job_description=job_input,
-                resume_text=resume_text
-            )
-
-
-            st.session_state.results = results
-            st.session_state.running = False
-
-
-            status.update(
-                label="✅ Job analysis completed!",
-                state="complete",
-                expanded=False
-            )
-
-
-    except Exception as e:
-
-        st.session_state.running = False
-
-        st.error(
-            f"Pipeline failed: {str(e)}"
+        # Reset States
+        for key in st.session_state["step_states"]:
+            st.session_state["step_states"][key] = {"status": "idle", "msg": "Waiting..."}
+        
+        generator = run_career_research_generator(
+            role=role, experience=experience, skills=skills, location=location
         )
 
-        st.stop()
+        for update in generator:
+            step_num = update["step"]
+            st.session_state["step_states"][step_num]["status"] = update["status"]
+            st.session_state["step_states"][step_num]["msg"] = update["msg"]
+            
+            # Refresh live status grid
+            render_pipeline_ui()
 
+            if update["status"] == "complete" and "data" in update:
+                st.session_state["career_result"] = update["data"]
 
-    st.rerun()
+# =============================================================================
+# RESULTS DISPLAY
+# =============================================================================
+if "career_result" in st.session_state:
+    result = st.session_state["career_result"]
+    
+    st.markdown("---")
+    st.markdown("### 🧠 Generated Intelligence Output")
 
-
-# ============================================================
-# RESULTS
-# ============================================================
-
-results = st.session_state.results
-
-
-if results:
-
-    st.markdown(
-        '<div class="divider"></div>',
-        unsafe_allow_html=True
-    )
-
-
-    st.markdown(
-        '<div class="section-heading">'
-        '🎯 Job Fit Analysis'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-    # ========================================================
-    # CAREER ADVICE - MAIN RESULT
-    # ========================================================
-
-    if "career_advice" in results:
-
-        st.markdown(
-            """
-            <div class="result-panel">
-
-                <div class="result-title">
-                    🎯 AI Career Recommendation
-                </div>
-
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            results["career_advice"]
-        )
-
-
-    # ========================================================
-    # ANALYSIS TABS
-    # ========================================================
-
-    tabs = st.tabs([
-        "📌 Job Analysis",
-        "👤 Candidate",
-        "🏢 Company",
-        "🛠️ Skill Gap",
-        "🧐 Critic"
+    tab_report, tab_search, tab_reader, tab_critic = st.tabs([
+        "✍️ Career Report", "🔎 Search Data", "📖 Scraped Content", "🧐 Critic Review"
     ])
 
+    with tab_report:
+        st.markdown('<div class="report-wrapper">', unsafe_allow_html=True)
+        st.markdown(result.get("report", "No report generated."))
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # --------------------------------------------------------
-    # JOB ANALYSIS
-    # --------------------------------------------------------
+    with tab_search:
+        st.code(result.get("search_results", ""), language="text")
 
-    with tabs[0]:
+    with tab_reader:
+        st.code(result.get("scraped_content", ""), language="text")
 
-        if "job_analysis" in results:
+    with tab_critic:
+        st.markdown('<div class="report-wrapper">', unsafe_allow_html=True)
+        st.markdown(result.get("feedback", "No feedback available."))
+        st.markdown('</div>', unsafe_allow_html=True)
 
-            st.markdown(
-                results["job_analysis"]
-            )
+    # DOWNLOAD BUTTON
+    markdown_report = f"""# Career Intelligence Report
+**Role:** {role}
+**Experience:** {experience}
+**Location:** {location}
 
+## Report
+{result.get('report', '')}
 
-    # --------------------------------------------------------
-    # CANDIDATE
-    # --------------------------------------------------------
-
-    with tabs[1]:
-
-        if "candidate_profile" in results:
-
-            st.markdown(
-                results["candidate_profile"]
-            )
-
-
-    # --------------------------------------------------------
-    # COMPANY
-    # --------------------------------------------------------
-
-    with tabs[2]:
-
-        if "company_research" in results:
-
-            st.markdown(
-                results["company_research"]
-            )
-
-
-    # --------------------------------------------------------
-    # SKILL GAP
-    # --------------------------------------------------------
-
-    with tabs[3]:
-
-        if "skill_gap_analysis" in results:
-
-            st.markdown(
-                results["skill_gap_analysis"]
-            )
-
-
-    # --------------------------------------------------------
-    # CRITIC
-    # --------------------------------------------------------
-
-    with tabs[4]:
-
-        if "critic_feedback" in results:
-
-            st.markdown(
-                results["critic_feedback"]
-            )
-
-
-    # ========================================================
-    # DOWNLOAD
-    # ========================================================
-
-    st.markdown(
-        '<div class="section-heading">'
-        '📥 Export'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-    # Combine all outputs into markdown report
-
-    report = f"""
-# AI Job Fit & Career Analysis
-
-## Job Analysis
-
-{results.get("job_analysis", "")}
-
-
-## Candidate Profile
-
-{results.get("candidate_profile", "")}
-
-
-## Company Research
-
-{results.get("company_research", "")}
-
-
-## Skill Gap Analysis
-
-{results.get("skill_gap_analysis", "")}
-
-
-## Career Recommendation
-
-{results.get("career_advice", "")}
-
-
-## Critic Feedback
-
-{results.get("critic_feedback", "")}
+## Critic Review
+{result.get('feedback', '')}
 """
 
-
     st.download_button(
-        label="⬇ Download Complete Analysis",
-        data=report,
-        file_name=(
-            f"job_fit_analysis_{int(time.time())}.md"
-        ),
+        label="📥 Download Full Report (.md)",
+        data=markdown_report,
+        file_name=f"career_report_{role.replace(' ', '_').lower()}.md",
         mime="text/markdown",
         use_container_width=True
     )
-
-
-# ============================================================
-# FOOTER
-# ============================================================
-
-st.markdown(
-    """
-    <div class="notice">
-        Job Fit Advisor · Powered by LangChain · Gemini ·
-        Multi-Agent AI
-    </div>
-    """,
-    unsafe_allow_html=True
-)

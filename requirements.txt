@@ -1,36 +1,15 @@
-# ============================
-# LangChain Framework
-# ============================
-langchain                 # Core LangChain framework
-langchain-core            # Base interfaces and abstractions
-langchain-community       # Community integrations (tools, loaders, etc.)
-langchain-google-genai    # Google Gemini integration for LangChain
+streamlit
 
-# ============================
-# Frontend
-# ============================
-streamlit                 # Interactive web application UI
+langchain
+langchain-core
+langchain-community
 
-# ============================
-# Search Tool
-# ============================
-tavily-python             # Tavily Search API client for web search
+langchain-google-genai
 
-# ============================
-# Web Scraping & Content Extraction
-# ============================
-beautifulsoup4            # Parse and navigate HTML pages
-readability-lxml          # Extract the main article content from webpages
-trafilatura               # Clean text extraction from web pages
-requests                  # Send HTTP requests to websites
-lxml                      # Fast XML/HTML parser used by BeautifulSoup
+tavily-python
 
-# ============================
-# Environment Variables
-# ============================
-python-dotenv             # Load environment variables from a .env file
+python-dotenv
 
-# ============================
-# Terminal Logging
-# ============================
-rich                      # Beautiful terminal output and logging
+requests
+trafilatura
+lxml
