@@ -10,14 +10,14 @@ warnings.filterwarnings("ignore")
 # PAGE CONFIG
 # =============================================================================
 st.set_page_config(
-    page_title="Career Research Assistant",
+    page_title="AI Career Research Assistant",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 # =============================================================================
-# CUSTOM CSS - DARK BLUE & CYAN PALETTE
+# CUSTOM CSS - VIOLET & CYBER-PURPLE PALETTE
 # =============================================================================
 st.markdown("""
 <style>
@@ -28,9 +28,9 @@ html, body, [class*="css"] {
 }
 
 .stApp {
-    background: radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.12), transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.12), transparent 40%),
-                linear-gradient(135deg, #030712 0%, #0f172a 50%, #020617 100%);
+    background: radial-gradient(circle at 10% 10%, rgba(168, 85, 247, 0.15), transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.12), transparent 40%),
+                linear-gradient(135deg, #0f0728 0%, #170c3a 50%, #0a041c 100%);
     color: #f3f4f6;
 }
 
@@ -53,10 +53,10 @@ html, body, [class*="css"] {
     letter-spacing: 2px;
     text-transform: uppercase;
     padding: 6px 16px;
-    border: 1px solid rgba(56, 189, 248, 0.3);
+    border: 1px solid rgba(192, 132, 252, 0.3);
     border-radius: 50px;
-    background: rgba(56, 189, 248, 0.1);
-    color: #38bdf8;
+    background: rgba(168, 85, 247, 0.1);
+    color: #c084fc;
     margin-bottom: 16px;
 }
 
@@ -70,21 +70,26 @@ html, body, [class*="css"] {
     color: #f9fafb;
 }
 
-.hero h1 span { color: #38bdf8; }
+.hero h1 span { color: #c084fc; }
 
 .hero-sub {
     max-width: 720px;
-    margin: 16px auto 0;
+    width: 90%;
+    margin: 16px auto 0 auto;
     font-size: 15px;
     line-height: 1.6;
-    color: #bae6fd;
-    opacity: 0.8;
+    color: #e9d5ff;
+    opacity: 0.85;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    text-align: center;
+    white-space: normal;
 }
 
 /* UI CARDS */
 .glass-card {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(56, 189, 248, 0.2);
+    background: rgba(23, 12, 58, 0.6);
+    border: 1px solid rgba(168, 85, 247, 0.25);
     border-radius: 16px;
     padding: 24px;
     backdrop-filter: blur(12px);
@@ -93,15 +98,15 @@ html, body, [class*="css"] {
 }
 
 label {
-    color: #38bdf8 !important;
+    color: #c084fc !important;
     font-weight: 600 !important;
     font-size: 13px !important;
 }
 
 /* INPUT OVERRIDES */
 .stTextInput input, .stTextArea textarea, .stSelectbox > div > div {
-    background: rgba(3, 7, 18, 0.8) !important;
-    border: 1px solid rgba(56, 189, 248, 0.25) !important;
+    background: rgba(15, 7, 40, 0.8) !important;
+    border: 1px solid rgba(168, 85, 247, 0.3) !important;
     border-radius: 8px !important;
     color: #f9fafb !important;
 }
@@ -111,19 +116,19 @@ label {
     width: 100%;
     min-height: 48px;
     border-radius: 10px;
-    border: 1px solid rgba(56, 189, 248, 0.5);
-    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+    border: 1px solid rgba(192, 132, 252, 0.5);
+    background: linear-gradient(135deg, #7e22ce 0%, #a855f7 100%);
     color: white;
     font-size: 15px;
     font-weight: 700;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 20px rgba(2, 132, 199, 0.35);
+    box-shadow: 0 4px 20px rgba(168, 85, 247, 0.35);
 }
 
 .stButton > button:hover {
     transform: translateY(-2px);
-    border-color: rgba(186, 230, 253, 0.6);
-    box-shadow: 0 6px 24px rgba(2, 132, 199, 0.55);
+    border-color: rgba(233, 213, 255, 0.7);
+    box-shadow: 0 6px 24px rgba(168, 85, 247, 0.55);
 }
 
 /* PIPELINE CARDS & DYNAMIC COLORING */
@@ -131,7 +136,7 @@ label {
     min-height: 160px;
     padding: 18px;
     border-radius: 14px;
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(23, 12, 58, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.08);
     transition: all 0.3s ease;
 }
@@ -143,17 +148,17 @@ label {
     box-shadow: 0 0 20px rgba(245, 158, 11, 0.3) !important;
 }
 
-/* COMPLETE STATE - CYAN/BLUE */
+/* COMPLETE STATE - VIOLET */
 .pipeline-card.complete {
-    border-color: #38bdf8 !important;
-    background: rgba(14, 116, 144, 0.4) !important;
-    box-shadow: 0 0 15px rgba(56, 189, 248, 0.3) !important;
+    border-color: #c084fc !important;
+    background: rgba(126, 34, 206, 0.35) !important;
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.3) !important;
 }
 
 .pipeline-number {
     font-family: 'DM Mono', monospace;
     font-size: 11px;
-    color: #38bdf8;
+    color: #c084fc;
     font-weight: 500;
 }
 
@@ -177,12 +182,12 @@ label {
 
 .badge-idle { background: rgba(255, 255, 255, 0.08); color: #9ca3af; }
 .badge-running { background: rgba(245, 158, 11, 0.3); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.5); }
-.badge-complete { background: rgba(56, 189, 248, 0.25); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.5); }
+.badge-complete { background: rgba(168, 85, 247, 0.25); color: #e9d5ff; border: 1px solid rgba(192, 132, 252, 0.5); }
 
 /* REPORT READABILITY */
 .report-wrapper {
-    background: rgba(3, 7, 18, 0.75);
-    border: 1px solid rgba(56, 189, 248, 0.25);
+    background: rgba(15, 7, 40, 0.85);
+    border: 1px solid rgba(168, 85, 247, 0.25);
     border-radius: 14px;
     padding: 28px;
     color: #f3f4f6;
@@ -191,7 +196,7 @@ label {
 }
 
 .report-wrapper h1, .report-wrapper h2, .report-wrapper h3 {
-    color: #38bdf8 !important;
+    color: #c084fc !important;
     font-family: 'Syne', sans-serif;
     margin-top: 20px;
 }
@@ -204,8 +209,8 @@ label {
 st.markdown("""
 <div class="hero">
     <div class="hero-eyebrow">LangChain · Groq / Gemini · Multi-Agent AI</div>
-    <h1>Career <span>Intelligence Suite</span></h1>
-    <p class="hero-sub">Autonomous multi-agent market research and career evaluation system.</p>
+    <h1>AI Career Research <span>Assistant</span></h1>
+    <p class="hero-sub">A multi-agent system using LangChain and Gemini/Groq LLM to research job market data, generate a career report, and provide a critic review — all in a streamlined pipeline.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -246,7 +251,7 @@ analyze_button = st.button("🚀 Run Career Intelligence Pipeline", use_containe
 st.markdown('</div>', unsafe_allow_html=True)
 
 # =============================================================================
-# PIPELINE STATUS TRACKER (DYNAMIC BLUE & GOLD UI)
+# PIPELINE STATUS TRACKER (DYNAMIC VIOLET & GOLD UI)
 # =============================================================================
 if "step_states" not in st.session_state:
     st.session_state["step_states"] = {
@@ -270,10 +275,10 @@ def render_pipeline_ui():
     for col, (step_num, icon, name, desc) in zip(cols, pipeline_meta):
         step_info = st.session_state["step_states"][step_num]
         status = step_info["status"]
-        
+
         badge_class = f"badge-{status}"
         card_class = f"pipeline-card {status}"
-        
+
         if status == "running":
             status_label = "⚡ RUNNING..."
         elif status == "complete":
@@ -287,7 +292,7 @@ def render_pipeline_ui():
                 <div class="pipeline-number">STEP 0{step_num}</div>
                 <div style="font-size: 22px; margin: 4px 0;">{icon}</div>
                 <div class="pipeline-name">{name}</div>
-                <div style="font-size:11px; color:#bae6fd; opacity:0.7;">{desc}</div>
+                <div style="font-size:11px; color:#e9d5ff; opacity:0.7;">{desc}</div>
                 <div class="pipeline-status-badge {badge_class}">{status_label}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -304,7 +309,7 @@ if analyze_button:
         # Reset States
         for key in st.session_state["step_states"]:
             st.session_state["step_states"][key] = {"status": "idle", "msg": "Waiting..."}
-        
+
         generator = run_career_research_generator(
             role=role, experience=experience, skills=skills, location=location
         )
@@ -313,7 +318,7 @@ if analyze_button:
             step_num = update["step"]
             st.session_state["step_states"][step_num]["status"] = update["status"]
             st.session_state["step_states"][step_num]["msg"] = update["msg"]
-            
+
             # Refresh live status grid
             render_pipeline_ui()
 
@@ -325,7 +330,7 @@ if analyze_button:
 # =============================================================================
 if "career_result" in st.session_state:
     result = st.session_state["career_result"]
-    
+
     st.markdown("---")
     st.markdown("### 🧠 Generated Intelligence Output")
 

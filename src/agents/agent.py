@@ -94,8 +94,6 @@ writer_prompt = ChatPromptTemplate.from_messages([
 
         7. Career Recommendations
 
-        8. Sources
-
         Keep the report factual, practical and easy to understand.
         """
     )
