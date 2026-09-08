@@ -33,9 +33,15 @@ def build_career_search_agent():
 # ============================================================
 
 def build_job_reader_agent():
+    system_prompt = (
+        "You are an expert web scraping and reader agent. "
+        "When given a URL, immediately call the `scrape_url` tool to extract "
+        "and clean the page contents, then return the extracted information concisely."
+    )
     return create_agent(
         model=llm,
-        tools=[scrape_url]
+        tools=[scrape_url],
+        system_prompt=system_prompt
     )
 
 # ============================================================

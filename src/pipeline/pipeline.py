@@ -4,6 +4,7 @@ warnings.filterwarnings("ignore")
 
 from agents.agent import (
     build_career_search_agent,
+    build_job_reader_agent,
     writer_chain,
     critic_chain
 )
@@ -56,37 +57,52 @@ def run_career_research_generator(
     - Technologies used
     - Industry trends
     - Relevant companies
+
+    IMPORTANT: Always include the direct HTTP/HTTPS source URLs as explicit links in your response.
+    You are strictly allowed to execute AT MOST ONE web search before providing your final answer.
     """
 
     print("[DEBUG] STEP 1/4: Invoking Search Agent API call...")
     search_result = search_agent.invoke({"messages": [("user", search_query)]})
+    print(search_result)
+    print("========================================")
     state["search_results"] = search_result["messages"][-1].content
 
     print(f"[DEBUG] STEP 1/4: Search Agent Completed. Output length: {len(state['search_results'])} characters.")
-    print(f"[DEBUG] STEP 1/4 Output Preview:\n{state['search_results'][:300]}...\n")
+    print(f"[DEBUG] STEP 1/4 Output Preview:\n{state['search_results']}...\n")
     yield {"step": 1, "status": "complete", "msg": "✓ Search Agent completed research.", "data": state}
 
     # ========================================================
-    # STEP 2 - DIRECT SCRAPING (OPTIMIZED: NO AGENT REASONING LOOP)
+    # STEP 2 - JOB READER AGENT (AGENTIC SCRAPING)
     # ========================================================
-    print("\n[DEBUG] STEP 2/4: Extracting and Scraping Top URL directly...")
-    yield {"step": 2, "status": "running", "msg": "📖 Scraping key resource page..."}
+    print("\n[DEBUG] STEP 2/4: Launching Job Reader Agent...")
+    yield {"step": 2, "status": "running", "msg": "📖 Job Reader Agent is inspecting target resource..."}
     
-    # Extract the first valid HTTP/HTTPS URL from search results using regex
-    urls = re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', state["search_results"])
+    # 1. First priority: Check extracted_urls array populated from ToolMessages in Step 1
+    # 2. Fallback: Parse state["search_results"] if extracted_urls is missing or empty
+    urls = state.get("extracted_urls", [])
+    if not urls and state.get("search_results"):
+        raw_urls = re.findall(r'https?://[^\s<>"\'\`\)]+|www\.[^\s<>"\'\`\)]+', state["search_results"])
+        urls = [u.rstrip(".,;:)]}") for u in raw_urls if u]
 
     if urls:
-        target_url = urls[0].rstrip(".)")
+        target_url = urls[0].rstrip(".,;:)]}")
         print(f"[DEBUG] STEP 2/4: Target URL found -> {target_url}")
         
-        # Invoke tool directly to avoid agent loop latency
-        scraped_data = scrape_url.invoke({"url": target_url})
-        state["scraped_content"] = scraped_data
+        # Instantiate and invoke the Job Reader Agent directly
+        job_reader_agent = build_job_reader_agent()
+        reader_prompt = f"Scrape and extract all relevant content from this page using scrape_url: {target_url}"
+        
+        print("[DEBUG] STEP 2/4: Invoking Job Reader Agent API call...")
+        reader_result = job_reader_agent.invoke({"messages": [("user", reader_prompt)]})
+        
+        # Capture agent's final message output
+        state["scraped_content"] = reader_result["messages"][-1].content
     else:
-        print("[DEBUG] STEP 2/4: No URLs found in search output. Skipping scrape.")
+        print("[DEBUG] STEP 2/4: No URLs found across search output or execution trace. Skipping scrape.")
         state["scraped_content"] = "No external URL available to scrape. Using search results."
 
-    print(f"[DEBUG] STEP 2/4: Scraping Completed. Content length: {len(state['scraped_content'])} characters.")
+    print(f"[DEBUG] STEP 2/4: Reader Agent Completed. Content length: {len(state['scraped_content'])} characters.")
     print(f"[DEBUG] STEP 2/4 Output Preview:\n{state['scraped_content'][:300]}...\n")
     yield {"step": 2, "status": "complete", "msg": "✓ Extracted deep research content.", "data": state}
 
