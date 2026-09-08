@@ -8,7 +8,6 @@ from agents.agent import (
     writer_chain,
     critic_chain
 )
-from tools.tools import scrape_url
 
 def run_career_research_generator(
     role: str,
