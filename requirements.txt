@@ -5,6 +5,7 @@ langchain-core
 langchain-community
 
 langchain-google-genai
+beautifulsoup4
 
 tavily-python
 
@@ -13,3 +14,4 @@ python-dotenv
 requests
 trafilatura
 lxml
+beautifulsoup4
