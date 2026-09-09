@@ -5,7 +5,7 @@ langchain-core
 langchain-community
 
 langchain-google-genai
-beautifulsoup4
+langchain-groq
 
 tavily-python
 
